@@ -19,5 +19,7 @@ except:
 #Brickpi Setup
 try:
 	bp = brickpi3.BrickPi3()
-	
+except: 
+	print("BrickPi Error")
+bp.offset_motor_encoder
 
