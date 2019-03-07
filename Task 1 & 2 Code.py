@@ -33,7 +33,6 @@ except KeyboardInterrupt:
 
 
 
-
 def set_motor_dps(self, port, dps):
         """
         Set the motor target speed in degrees per second
