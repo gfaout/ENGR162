@@ -1,3 +1,38 @@
+from __future__ import print_function 
+from __future__ import division
+
+import time 
+import brickpi3
+
+BP = brickpi3.BrickPi3()
+try:
+    try:
+         BP.offset_motor_encoder(BP.PORT_B, BP.get_motor_encoder(BP.PORT_B)) #this might need to be changed to PORT_A
+    except IOError as error:
+        print(error)
+                
+    while True:
+            try:
+                power = BP.get_motor_encoder(BP.PORT_B) / 10 #don't know why we are dividing by 10
+                                                             #might need to change to PORT_A
+                if power > 100:
+                    power = 100
+                elif power < -100:
+                    power = -100
+            except IOError as error:
+                print(error)
+                power = 0
+                    
+            BP.set_motor_power(BP.PORT_C, power) #is the PORT_ corresponding to the motor controlled? PORT_A for motor A?
+            time.sleep(0.02)    
+            
+except KeyboardInterrupt:
+    BP.reset_all()
+    
+#change the PORT_ to where we are plugging in 
+
+
+
 
 def set_motor_dps(self, port, dps):
         """
