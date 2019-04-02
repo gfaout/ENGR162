@@ -1,7 +1,7 @@
 clc
 clear
 
-maxTime = input('Maximum time to reach destination seconds: '); %2604 max distance
+maxTime = input('Maximum time to reach destination days: '); %2604 max distance
 dT = input('Time step: ');
 currentTime = 0;
 airDensity = 1.225;
