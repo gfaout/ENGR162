@@ -8,7 +8,7 @@ airDensity = 1.225;
 waterDensity = 1025;
 %vAir = importdata('windData.csv');
 vWater = .11; %.11 m/s to .23 m/s Benguela Current
-%vIceberg = importdata('iceData.csv');
+vIceberg = 0.194444 %0.19444 m/s to 1 m/s natural movement
 %temp = importdata('temp.csv');
 iceWaterCd = 0.03;
 iceAirCd = 0.03 * 10^-3;
@@ -23,9 +23,9 @@ while (currentTime < maxTime)
 
     draft = height * 5 / 6;
     
-    underFricDrag = dragForce(waterDensity, width * length, iceWaterCd,vWater, vIceberg.data(currentTime)); %change parameters based on data
-    aboveFricDrag = dragForce(airDensity, width * length, iceAirCd,vAir.data(currentTime), vIceberg.data(currentTime));
-    underFormDrag = dragForce(waterDensity, draft * length, formCd,vWater), vIceberg.data(currentTime));
-    aboveFormDrag = dragForce(airDensity, (height - draft) * length, formCd,vAir.data(currentTime), vIceberg.data(currentTime));
+    underFricDrag = dragForce(waterDensity, width * length, iceWaterCd,vWater, vIceberg); %change parameters based on data
+    aboveFricDrag = dragForce(airDensity, width * length, iceAirCd,vAir.data(currentTime), vIceberg);
+    underFormDrag = dragForce(waterDensity, draft * length, formCd,vWater), vIceberg);
+    aboveFormDrag = dragForce(airDensity, (height - draft) * length, formCd,vAir.data(currentTime), vIceberg);
     currentTime = currentTime + dT;
 end
