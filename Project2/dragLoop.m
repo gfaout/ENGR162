@@ -14,9 +14,9 @@ iceWaterCd = 0.03;
 iceAirCd = 0.03 * 10^-3;
 formCd = 0.82;
 
-width = 450; % Initial width
-length = 800; % Initial length
-height = 225; % Initial height
+width = input('Iceberg inital width: '); % Initial width 450
+length = input('Iceberg inital length: '); % Initial length 800
+height = input('Iceberg inital height: '); % Initial height 225
 
 while (currentTime < maxTime)
     [height, length, width, volume_loss, mass_loss] = Iceberg_melt(vIceberg.data(currentTime), temp.data(currentTime), length, width, height, vAir.data(currentTime), vWater, currentTime);
