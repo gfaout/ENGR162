@@ -20,7 +20,7 @@ ultrasonic_right = 2
 grovepi.pinMode(ultrasonic_left, "INPUT")
 grovepi.pinMode(ultrasonic_right, "INPUT")
 all_direction_distance = [0, 0, 0]
-map = [5] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+map = [[5]] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
 
 ####_________________________________________________________####
 
@@ -212,20 +212,36 @@ def openPaths(all_direction_distance):
     return paths_free
 
 def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the coordinates of the location the GEARS is at
+    pos_shift = [0, 0]
     if (standard_angle - 360 > -45 and standard_angle < 45):
         curr_loc[1] += 1
+        pos_shift = [0, 1]
     elif (standard_angle > 45 and standard_angle < 135): 
         curr_loc[0] -= 1
+        pos_shift = [-1, 0]
     elif (standard_angle > 135 and standard_angle < 225):
         curr_loc[1] -= 1
+        pos_shift = [0, -1]
     else:
         curr_loc[0] += 1
+        pos_shift = [1, 0]
+    return
 
-def updateMap(curr_loc):
+def updateMap(mapFinal, pos_shift):
     if (curr_loc[0] < 0):
-
+        for j in range(0, len(mapFinal)):
+            row = mapFinal[j]
+            row.insert(0, 0)
+        curr_loc[0] += 1
     elif (curr_loc[1] < 0):
+        mapFinal.append([0])
+        for i in range(0, len(mapFinal[0]) - 1):
+            mapFinal[len(mapFinal) - 1].append(0)
+        curr_loc[1] += 1    
     else:
+        print('WIP')
+    return
+   
 ##___MAIN CODE____##
 time.sleep(delay_brickpi)
 
