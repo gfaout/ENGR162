@@ -227,13 +227,13 @@ def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the co
         pos_shift = [1, 0]
     return
 
-def updateMap(mapFinal, pos_shift):
-    if (curr_loc[0] < 0):
+def updateMap(mapFinal, curr_loc, pos_shift):
+    if (pos_shift[0] = -1):
         for j in range(0, len(mapFinal)):
             row = mapFinal[j]
             row.insert(0, 0)
         curr_loc[0] += 1
-    elif (curr_loc[1] < 0):
+    elif (pos_shift[1] = -1):
         mapFinal.append([0])
         for i in range(0, len(mapFinal[0]) - 1):
             mapFinal[len(mapFinal) - 1].append(0)
