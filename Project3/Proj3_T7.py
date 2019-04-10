@@ -227,6 +227,10 @@ def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the co
         pos_shift = [1, 0]
     return
 
+def coordShift(mapFinal, curr_loc):
+    coord = [len(mapFinal) - curr_loc[0] - 1, curr_loc[1]]
+    return
+   
 def updateMap(mapFinal, curr_loc, pos_shift):
     if (pos_shift[0] == -1):
         for j in range(0, len(mapFinal)):
