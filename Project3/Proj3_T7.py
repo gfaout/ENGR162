@@ -212,38 +212,45 @@ def openPaths(all_direction_distance):
     return paths_free
 
 def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the coordinates of the location the GEARS is at
-    pos_shift = [0, 0]
+    pos_shift = 0
     if (standard_angle - 360 > -45 and standard_angle < 45):
         curr_loc[1] += 1
-        pos_shift = [0, 1]
+        pos_shift = 1 # up
     elif (standard_angle > 45 and standard_angle < 135): 
         curr_loc[0] -= 1
-        pos_shift = [-1, 0]
+        pos_shift = 2 # left
     elif (standard_angle > 135 and standard_angle < 225):
         curr_loc[1] -= 1
-        pos_shift = [0, -1]
+        pos_shift = 3 # down
     else:
         curr_loc[0] += 1
-        pos_shift = [1, 0]
+        pos_shift = 4 # right
     return
 
 def coordShift(mapFinal, curr_loc):
-    coord = [len(mapFinal) - curr_loc[0] - 1, curr_loc[1]]
-    return
-   
+    return [curr_loc[0], len(mapFinal) - curr_loc[1] - 1] # coordinates for matrix
+
 def updateMap(mapFinal, curr_loc, pos_shift):
-    if (pos_shift[0] == -1):
-        for j in range(0, len(mapFinal)):
-            row = mapFinal[j]
-            row.insert(0, 0)
-        curr_loc[0] += 1
-    elif (pos_shift[1] == -1):
-        mapFinal.append([0])
-        for i in range(0, len(mapFinal[0]) - 1):
-            mapFinal[len(mapFinal) - 1].append(0)
-        curr_loc[1] += 1    
-    else:
-        print('WIP')
+    try:
+        coordinates = coordShift(mapFinal, curr_loc)
+        print(coordinates)
+        mapFinal[coordinates[1]][coordinates[0]] = 1
+    except:
+        if (pos_shift == 1):
+            print('WIP')
+        elif (pos_shift == 2):
+            for j in range(0, len(mapFinal)):
+                row = mapFinal[j]
+                row.insert(0, 0)
+            curr_loc[0] += 1
+        elif (pos_shift == 3):
+            mapFinal.append([0])
+            for i in range(0, len(mapFinal[0]) - 1):
+                mapFinal[len(mapFinal) - 1].append(0)
+            curr_loc[1] += 1
+        else:
+            print('WIP')
+        mapFinal[curr_loc[1]][curr_loc[0]] = 1
     return
    
 ##___MAIN CODE____##
