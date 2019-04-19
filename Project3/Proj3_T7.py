@@ -20,7 +20,9 @@ ultrasonic_right = 2
 grovepi.pinMode(ultrasonic_left, "INPUT")
 grovepi.pinMode(ultrasonic_right, "INPUT")
 all_direction_distance = [0, 0, 0]
-map = [[5]] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+length = 0
+width = 0
+curr_loc = [0, 0] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
 
 ####_________________________________________________________####
 
@@ -211,47 +213,28 @@ def openPaths(all_direction_distance):
             paths_free[i] = True
     return paths_free
 
+def inputArray():
+    length = (input("What is the array length? "))
+    width = (input("What is the array width? "))
+    return [[0] * int(length) for i in range(int(width))]
+
 def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the coordinates of the location the GEARS is at
-    pos_shift = 0
     if (standard_angle - 360 > -45 and standard_angle < 45):
-        curr_loc[1] += 1
-        pos_shift = 1 # up
+        curr_loc[1] += 1 # up
     elif (standard_angle > 45 and standard_angle < 135): 
-        curr_loc[0] -= 1
-        pos_shift = 2 # left
+        curr_loc[0] -= 1 # left
     elif (standard_angle > 135 and standard_angle < 225):
-        curr_loc[1] -= 1
-        pos_shift = 3 # down
+        curr_loc[1] -= 1 # down
     else:
-        curr_loc[0] += 1
-        pos_shift = 4 # right
+        curr_loc[0] += 1 # right
     return
 
 def coordShift(mapFinal, curr_loc):
-    return [curr_loc[0], len(mapFinal) - curr_loc[1] - 1] # coordinates for matrix
+    return [curr_loc[0], length - curr_loc[1] - 1] # coordinates for matrix
 
-def updateMap(mapFinal, curr_loc, pos_shift):
-    try:
-        coordinates = coordShift(mapFinal, curr_loc)
-        print(coordinates)
-        mapFinal[coordinates[1]][coordinates[0]] = 1
-    except:
-        if (pos_shift == 1):
-            print('WIP')
-        elif (pos_shift == 2):
-            for j in range(0, len(mapFinal)):
-                row = mapFinal[j]
-                row.insert(0, 0)
-            curr_loc[0] += 1
-        elif (pos_shift == 3):
-            mapFinal.append([0])
-            for i in range(0, len(mapFinal[0]) - 1):
-                mapFinal[len(mapFinal) - 1].append(0)
-            curr_loc[1] += 1
-        else:
-            print('WIP')
-        mapFinal[curr_loc[1]][curr_loc[0]] = 1
-    return
+def updateMap(mapFinal, curr_loc): # add conditionals here for other numbers on map
+    coordinates = coordShift(mapFinal, curr_loc)
+    mapFinal[coordinates[1]][coordinates[0]] = 1
    
 ##___MAIN CODE____##
 time.sleep(delay_brickpi)
