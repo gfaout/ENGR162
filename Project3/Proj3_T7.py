@@ -7,22 +7,24 @@ import time
 #### Import statements, constants settings, and grovepi setup ####
 BP = brickpi3.BrickPi3()
 A = BP.PORT_A
-B = BP.PORT_B  # Left wheel   # positive moves wheel backward & negative forward
-C = BP.PORT_C  # Right wheel
-EV3_GYRO = BP.PORT_2
-EV3_Ultra = BP.PORT_3
+L_Motor = BP.PORT_B  # Left wheel   # positive moves wheel backward & negative forward
+R_Motor = BP.PORT_C  # Right wheel
+EV3_GYRO = BP.PORT_1
+EV3_Ultra = BP.PORT_2
 delay_brickpi = 4
 delay = 0.03
 gyro_iterations = 5
 sonic_iterations = 5
-ultrasonic_left = 1
-ultrasonic_right = 2
+ultrasonic_left = 5
+ultrasonic_right = 7
+infra = 2
+imu = 6
 grovepi.pinMode(ultrasonic_left, "INPUT")
 grovepi.pinMode(ultrasonic_right, "INPUT")
 all_direction_distance = [0, 0, 0]
-length = 0
-width = 0
-curr_loc = [0, 0] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+front_distance = 30
+side_distance = 30
+map = [5] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
 
 ####_________________________________________________________####
 
@@ -34,17 +36,17 @@ BP.set_sensor_type(EV3_Ultra, BP.SENSOR_TYPE.EV3_ULTRASONIC_CM)
 """
  while (angle <  abs(degree_to_reach)):
         if (degree_to_reach > 0):
-            BP.set_motor_dps(B, 30)
-            BP.set_motor_dps(C, -30)
-            time.delay(delay)
-            BP.set_motor_dps(B, 0)
-            BP.set_motor_dps(C, 0)
+            BP.set_motor_dps(L_Motor, 30)
+            BP.set_motor_dps(R_Motor, -30)
+            time.sleep(delay)
+            BP.set_motor_dps(L_Motor, 0)
+            BP.set_motor_dps(R_Motor, 0)
         else:
-            BP.set_motor_dps(B, -30)
-            BP.set_motor_dps(C, 30)
-            time.delay(delay)
-            BP.set_motor_dps(B, 0)
-            BP.set_motor_dps(C, 0)
+            BP.set_motor_dps(L_Motor, -30)
+            BP.set_motor_dps(R_Motor, 30)
+            time.sleep(delay)
+            BP.set_motor_dps(L_Motor, 0)
+            BP.set_motor_dps(R_Motor, 0)
         angle = getCurrAngle(EV3_GYRO)
 """
 def turn(degrees_to_turn):  # positive is to the right, negative is to the left
@@ -60,28 +62,28 @@ def turn(degrees_to_turn):  # positive is to the right, negative is to the left
     while (direction * (angle - target_angle) < 0):   # Test
         print("Current_angle and Target_Angle:    \n",angle, target_angle)
         print("big")
-        BP.set_motor_dps(B, -direction * 100)  #initial turning 
-        BP.set_motor_dps(C, direction * 100) #opposite sign to create turning  
+        BP.set_motor_dps(L_Motor, direction * 100)  #initial turning 
+        BP.set_motor_dps(R_Motor, -direction * 100) #opposite sign to create turning  
         # Constant iterations and stops                
         """elif ((abs(target_angle - angle) > 3) or (abs(target_angle - angle) > 3 and abs(target_angle - angle) < 357)):
             print("smol")
-            BP.set_motor_dps(B, 0)   #this is to stop the turning before the next check 
-            BP.set_motor_dps(C, 0)
-            BP.set_motor_dps(B, direction * 15)
-            BP.set_motor_dps(C, -direction * 15)
+            BP.set_motor_dps(L_Motor, 0)   #this is to stop the turning before the next check 
+            BP.set_motor_dps(R_Motor, 0)
+            BP.set_motor_dps(L_Motor, direction * 15)
+            BP.set_motor_dps(R_Motor, -direction * 15)
         else:
-            BP.set_motor_dps(B, 0)
-            BP.set_motor_dps(C, 0)
+            BP.set_motor_dps(L_Motor, 0)
+            BP.set_motor_dps(R_Motor, 0)
 
             if (direction == 1):
-                BP.set_motor_dps(B, 5)
-                BP.set_motor_dps(C, -5)
+                BP.set_motor_dps(L_Motor, 5)
+                BP.set_motor_dps(R_Motor, -5)
             elif (direction == -1):
-                BP.set_motor_dps(B, -5)
-                BP.set_motor_dps(C, 5)"""
+                BP.set_motor_dps(L_Motor, -5)
+                BP.set_motor_dps(R_Motor, 5)"""
         angle = getCurrAngle(EV3_GYRO)[0]
-    BP.set_motor_power(B, 0)
-    BP.set_motor_power(C, 0)      
+    BP.set_motor_power(L_Motor, 0)
+    BP.set_motor_power(R_Motor, 0)      
     print("overshot\n")
     while (angle != target_angle):
         P = 0 # Proportional Feedback Value
@@ -93,28 +95,47 @@ def turn(degrees_to_turn):  # positive is to the right, negative is to the left
 
         P = -KP * error   # Not sure if this should be positive or negative
         I +=  -KI * error * dT / 2   # Not sure if this should be positive or negative
-
-        powerIn = (P + I) * 0.75
-        BP.set_motor_power(B, powerIn)
-        BP.set_motor_power(C, -powerIn)
-        time.delay(dT)
-        BP.set_motor_power(B, 0)
-        BP.set_motor_power(C, 0) # Unsure if this will cover set_motor_dps to 0
+        powerIn = (P + I) * 2
+        if (abs(angle - target_angle) <= 2):
+            BP.set_motor_power(L_Motor, direction * powerIn * 1.5)
+            BP.set_motor_power(R_Motor, -direction * powerIn * 1.5)
+            time.sleep(dT)
+            print("near break")
+            print(abs(angle - target_angle))
+            print(target_angle)
+            break
+            print(abs(angle - target_angle))
+        elif (abs(angle - target_angle) <= 1.1):
+            print("broke")
+            print(abs(angle - target_angle))
+            break
+        else:
+            powerIn = (P + I) * 2
+        BP.set_motor_power(L_Motor, direction * powerIn)
+        BP.set_motor_power(R_Motor, -direction * powerIn)
+        time.sleep(dT)
+        
+        BP.set_motor_power(L_Motor, 0)
+        BP.set_motor_power(R_Motor, 0) # Unsure if this will cover set_motor_dps to 0
         angle = getCurrAngle(EV3_GYRO)[0]
+        print(str(angle))
+        print("abs: %d", (abs(angle - target_angle)))
+    
     print("finished")
-    BP.set_motor_power(B, 0)
-    BP.set_motor_power(C, 0)
+    print(getCurrAngle(EV3_GYRO)[0])
+    BP.set_motor_power(L_Motor, 0)
+    BP.set_motor_power(R_Motor, 0)
         
 def goStraight(offset = 0):
-    BP.set_motor_dps(B, -200 - offset)
-    BP.set_motor_dps(C, -200 + offset)
+    BP.set_motor_dps(L_Motor, 200 - offset)
+    BP.set_motor_dps(R_Motor, 200 + 0.0 + offset)
     time.sleep(delay)
-    """BP.set_motor_dps(B, 0)
-    BP.set_motor_dps(C, 0)"""
+    """BP.set_motor_dps(L_Motor, 0)
+    BP.set_motor_dps(R_Motor, 0)"""
 
 def stop():
-    BP.set_motor_dps(B, 0)
-    BP.set_motor_dps(C, 0)
+    BP.set_motor_dps(L_Motor, 0)
+    BP.set_motor_dps(R_Motor, 0)
 
 #The following function is an attempt at a realignment function
 """
@@ -134,7 +155,7 @@ def currDistance(ultrasonic_port, BP_Ultra):
         try:
             for i in range(sonic_iterations):
                 sonic_distance = sonic_distance + grovepi.ultrasonicRead(ultrasonic_port)
-                time.sleep(0.02)
+                time.sleep(0.005)
             sonic_distance = sonic_distance / sonic_iterations
         except TypeError:
             print("Error")
@@ -144,7 +165,7 @@ def currDistance(ultrasonic_port, BP_Ultra):
         try:
             for i in range(sonic_iterations):
                 sonic_distance = sonic_distance + BP.get_sensor(BP_Ultra)
-                time.sleep(0.02)
+                time.sleep(0.005)
             sonic_distance = sonic_distance / sonic_iterations
         except TypeError:
             print("Error")
@@ -153,7 +174,7 @@ def currDistance(ultrasonic_port, BP_Ultra):
     return sonic_distance
 
 
-def getCurrAngle(EV3_GYRO)
+def getCurrAngle(EV3_GYRO):
     angle = [0 , 0]
     for i in range(gyro_iterations):
         sensor_data = BP.get_sensor(EV3_GYRO)
@@ -213,6 +234,40 @@ def openPaths(all_direction_distance):
             paths_free[i] = True
     return paths_free
 
+
+def pocNavMaze():
+    all_dist = [0, 0, 0]
+    all_dist = checkUltrasonic(all_dist)
+    print("%d %d %d", all_dist[0], all_dist[1], all_dist[2])
+    if (all_dist[0] > side_distance):
+        stop()
+        print("Turn Left")
+        turn(-90)
+        print("Now Going Straight")
+        goStraight()
+        time.sleep(2)
+        stop()
+        print("Finished going straight - Left")
+    elif (all_dist[1] > front_distance and all_dist[0] <= side_distance):
+        goStraight()
+        print("straight")
+        time.sleep(0.03)
+    elif (all_dist[2] > side_distance and all_dist[0] <= side_distance and all_dist[1] <= front_distance):
+        stop()
+        print("Turn Right")
+        turn(90)
+        print("Now Going Straight")
+        goStraight()
+        time.sleep(2)
+        stop()
+        print("Finished going straight - Right")
+    else:
+        print("180 turn")
+        turn(180)
+        goStraight()
+        time.sleep(0.1)
+
+"""
 def inputArray():
     length = (input("What is the array length? "))
     width = (input("What is the array width? "))
@@ -227,44 +282,48 @@ def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the co
         curr_loc[1] -= 1 # down
     else:
         curr_loc[0] += 1 # right
-    return
+return
 
 def coordShift(mapFinal, curr_loc):
     return [curr_loc[0], length - curr_loc[1] - 1] # coordinates for matrix
 
 def updateMap(mapFinal, curr_loc): # add conditionals here for other numbers on map
     coordinates = coordShift(mapFinal, curr_loc)
-    mapFinal[coordinates[1]][coordinates[0]] = 1
-   
+mapFinal[coordinates[1]][coordinates[0]] = 1
+"""
 ##___MAIN CODE____##
 time.sleep(delay_brickpi)
 
 try:
     while True:
-        goStraight()
-        all_direction_distance = checkUltrasonic(all_direction_distance)
-        """checkAlignment(all_direction_distance)"""
-        if (all_direction_distance[1] < 12):
-            stop() #Test to see if this is responsive enough (might overshoot too quick)
-            paths_free = openPaths(all_direction_distance)
-            if (all_direction_distance[0] > 12):
-                print("left")
-                turn(-90)
-            elif (all_direction_distance[2] > 12):
-                print("right")
-                turn(90)
-            else:
-                print("turn around")
-                turn(180)
+        pocNavMaze()
+        print("Finished 1 iteration")
+        time.sleep(0.01)
+        
+        
+    """goStraight()
+    all_direction_distance = checkUltrasonic(all_direction_distance)
+    #checkAlignment(all_direction_distance)
+    if (all_direction_distance[1] < 12):
+        stop() #Test to see if this is responsive enough (might overshoot too quick)
+        paths_free = openPaths(all_direction_distance)
+        if (all_direction_distance[0] > 12):
+            print("left")
+            turn(-90)
+        elif (all_direction_distance[2] > 12):
+            print("right")
+            turn(90)
         else:
-            print("straight\n\n")
-            
-        #goStraight() for a certain amount of time
-        #checkUltrasonic
-
-        #distance_ahead = currDistance()
-        #while (distance_ahead > 15):
-        #    goStraight()
+            print("turn around")
+            turn(180)
+    else:
+        print("straight\n\n")
+        
+    #goStraight() for a certain amount of time
+    #checkUltrasonic
+    #distance_ahead = currDistance()
+    #while (distance_ahead > 15):
+    #    goStraight()
         #    distance_ahead = currDistance()
         #    time.sleep(delay)
         #all_direction_distance = [0, 0, 0]
@@ -279,8 +338,9 @@ try:
         #fopen('team07_map.csv', 'w')
         #fprintf(myList)
         #fclose('team07.map.csv')
-        time.sleep(delay)
-
+        time.sleep(delay)"""
+    stop()
 except KeyboardInterrupt:
+    stop()
     print("Keyboard Interrupt")
     BP.reset_all()
