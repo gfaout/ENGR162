@@ -24,7 +24,9 @@ grovepi.pinMode(ultrasonic_right, "INPUT")
 all_direction_distance = [0, 0, 0]
 front_distance = 30
 side_distance = 30
-map = [5] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+length = 0
+width = 0
+curr_loc = [0, 0] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
 
 ####_________________________________________________________####
 
