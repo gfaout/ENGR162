@@ -3,30 +3,37 @@ from __future__ import division
 import brickpi3
 import grovepi
 import time
+import MPU9250
+from math import sqrt, pi
 
 #### Import statements, constants settings, and grovepi setup ####
 BP = brickpi3.BrickPi3()
-A = BP.PORT_A
-L_Motor = BP.PORT_B  # Left wheel   # positive moves wheel backward & negative forward
-R_Motor = BP.PORT_C  # Right wheel
-EV3_GYRO = BP.PORT_1
-EV3_Ultra = BP.PORT_2
+mpu9250 = MPU9250.MPU9250()
+Tilt_Motor = BP.PORT_C   # This controls the tilting arm of the 
+L_Motor = BP.PORT_D  # Left wheel   # positive moves wheel backward & negative forward
+R_Motor = BP.PORT_B  # Right wheel
+EV3_GYRO = BP.PORT_3
+EV3_Ultra = BP.PORT_4
 delay_brickpi = 4
 delay = 0.03
 gyro_iterations = 5
 sonic_iterations = 5
-ultrasonic_left = 5
+ultrasonic_center = 2
 ultrasonic_right = 7
-infra = 2
-imu = 6
-grovepi.pinMode(ultrasonic_left, "INPUT")
+infra1= 14		# Pin 14 is A2 Port.
+infra2 = 15		# Pin 15 is A3 Port.
+grovepi.pinMode(infra1,"INPUT")
+grovepi.pinMode(infra2,"INPUT")
+#imu = 6
+grovepi.pinMode(ultrasonic_center, "INPUT")
 grovepi.pinMode(ultrasonic_right, "INPUT")
 all_direction_distance = [0, 0, 0]
-front_distance = 30
-side_distance = 30
-length = 0
-width = 0
-curr_loc = [0, 0] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+front_distance = 20
+side_distance = 40
+map = [5] #1 indicates path, 0 indicates not part of path, 5 is start, 2 is heat, 3 is magnet, 4 is end
+w_radius = 4.3 # radius in cm
+ir_thresh = 374
+mag_thresh = 204.68
 
 ####_________________________________________________________####
 
@@ -35,22 +42,43 @@ BP.set_sensor_type(EV3_GYRO, BP.SENSOR_TYPE.EV3_GYRO_ABS_DPS)
 BP.set_sensor_type(EV3_Ultra, BP.SENSOR_TYPE.EV3_ULTRASONIC_CM) 
 ####________#####
 
-"""
- while (angle <  abs(degree_to_reach)):
-        if (degree_to_reach > 0):
-            BP.set_motor_dps(L_Motor, 30)
-            BP.set_motor_dps(R_Motor, -30)
-            time.sleep(delay)
-            BP.set_motor_dps(L_Motor, 0)
-            BP.set_motor_dps(R_Motor, 0)
-        else:
-            BP.set_motor_dps(L_Motor, -30)
-            BP.set_motor_dps(R_Motor, 30)
-            time.sleep(delay)
-            BP.set_motor_dps(L_Motor, 0)
-            BP.set_motor_dps(R_Motor, 0)
-        angle = getCurrAngle(EV3_GYRO)
-"""
+
+def readMag():
+    try:
+        mag = mpu9250.readMagnet()
+        mag_value = [mag['x'],mag['y'],mag['z']]
+        size_mag = sqrt(mag_value[0]**2 + mag_value[1]**2 + mag_value[2]**2)
+        return mag_value, size_mag
+    except IOError:
+        print("Magnet IO Error")
+        return [-1,-1,-1], 1
+
+
+# Output function
+def IR_PrintValues():
+    try:
+        infra1= 14		# Pin 14 is A0 Port.
+        infra2 = 15		# Pin 15 is A0 Port.               
+        sensor1_value = grovepi.analogRead(infra1)
+        sensor2_value = grovepi.analogRead(infra2)
+        
+        print ("One = " + str(sensor1_value) + "\tTwo = " + str(sensor2_value))
+        time.sleep(.1) # Commenting out for now
+    except IOError:
+        print ("Error")
+
+#Read Function		
+def IR_Read():
+    try:
+        infra1= 14		# Pin 14 is A0 Port.
+        infra2 = 15		# Pin 15 is A0 Port.                
+        sensor1_value = grovepi.analogRead(infra1)
+        sensor2_value = grovepi.analogRead(infra2)
+        ir_mag = sqrt(sensor1_value**2 + sensor2_value**2)
+        return [sensor1_value, sensor2_value],ir_mag
+    except IOError:
+        print ("Error")
+
 def turn(degrees_to_turn):  # positive is to the right, negative is to the left
     #Assume degrees_to_turn is below 361 and above -361
     start_angle = getCurrAngle(EV3_GYRO)[0]
@@ -90,8 +118,8 @@ def turn(degrees_to_turn):  # positive is to the right, negative is to the left
     while (angle != target_angle):
         P = 0 # Proportional Feedback Value
         I = 0 # Integral Feedback Value
-        KP = 2.5 # Proportional Gain value
-        KI = 3 # Integral Gain value
+        KP = 1.5 # Proportional Gain value
+        KI = 2 # Integral Gain value
         dT = 0.1 # Time step
         error =  direction * (angle - target_angle) # Error Value
 
@@ -176,7 +204,7 @@ def currDistance(ultrasonic_port, BP_Ultra):
     return sonic_distance
 
 
-def getCurrAngle(EV3_GYRO):
+def getCurrAngle(EV3_GYRO = EV3_GYRO):
     angle = [0 , 0]
     for i in range(gyro_iterations):
         sensor_data = BP.get_sensor(EV3_GYRO)
@@ -188,7 +216,7 @@ def getCurrAngle(EV3_GYRO):
     return angle
 
 # Returns absolute position from 0 to 360, angular velocity
-def getStandardAngle(EV3_GYRO):
+def getStandardAngle(EV3_GYRO = EV3_GYRO):
     angle = getCurrAngle(EV3_GYRO)
     angle[0] = angle[0] % 360
     return angle
@@ -220,8 +248,8 @@ def changePos(target):
 #is the left ultrasonic distance, the second element is the forward ultrasonic distance, 
 #and the third element is the right ultrasonic distance
 def checkUltrasonic(all_direction_distance):
-    all_direction_distance[0] = currDistance(ultrasonic_left, 0)
-    all_direction_distance[1] = currDistance(0, EV3_Ultra)
+    all_direction_distance[0] = currDistance(0, EV3_Ultra)
+    all_direction_distance[1] = currDistance(ultrasonic_center, 0)
     all_direction_distance[2] = currDistance(ultrasonic_right, 0)
     return(all_direction_distance)
 
@@ -235,19 +263,49 @@ def openPaths(all_direction_distance):
         if (all_direction_distance[i] > 20):
             paths_free[i] = True
     return paths_free
+"""
+def move_square():
+    
+    while (mag_mag < mag_thresh and ir_mag < ir_thresh and )
+        goDistance(4,0.4)
+        ir_array, ir_mag = IR_Read()
+        mag_array, mag_mag = readMag()
+        if (mag_mag > mag_thresh or ir_mag > ir_thresh):
+            turn(180)
+    return    
+"""
+def goDistance(distance, time):
+    BP.set_motor_dps(L_Motor,(distance / (2 * pi * w_radius)) * (360 / time))
+    BP.set_motor_dps(R_Motor,(distance / (2 * pi * w_radius)) * (360 / time))
+    time.sleep(time)
+    stop()
+    
 
-
-def pocNavMaze():
+def navMaze():
     all_dist = [0, 0, 0]
     all_dist = checkUltrasonic(all_dist)
-    print("%d %d %d", all_dist[0], all_dist[1], all_dist[2])
+    #print("%d %d %d", all_dist[0], all_dist[1], all_dist[2])
+    ir_array, ir_mag = IR_Read()
+    mag_array, mag_mag = readMag()
+    if (ir_mag > ir_thresh):
+        print("IR Beacon found")
+        turn(180)
+        goStraight()
+        time.sleep(0.3)
+        return
+    elif (mag_mag > mag_thresh):
+        print("Magnetic Beacon found")
+        turn(180)
+        goStraight()
+        time.sleep(0.3)
+        return
     if (all_dist[0] > side_distance):
         stop()
         print("Turn Left")
-        turn(-90)
+        turn(-85)
         print("Now Going Straight")
         goStraight()
-        time.sleep(2)
+        time.sleep(5)
         stop()
         print("Finished going straight - Left")
     elif (all_dist[1] > front_distance and all_dist[0] <= side_distance):
@@ -257,19 +315,23 @@ def pocNavMaze():
     elif (all_dist[2] > side_distance and all_dist[0] <= side_distance and all_dist[1] <= front_distance):
         stop()
         print("Turn Right")
-        turn(90)
+        turn(75)
         print("Now Going Straight")
         goStraight()
-        time.sleep(2)
+        time.sleep(5)
         stop()
         print("Finished going straight - Right")
+    elif (all_dist[0] > side_distance and all_dist[2] > side_distance and all_dist[1] > front_distance):
+        stop()
+        BP.set_motor_dps(Tilt_Motor, 150)
+        time.sleep(1.25)
+        BP.set_motor_dps(Tilt_Motor,0)
     else:
         print("180 turn")
         turn(180)
         goStraight()
-        time.sleep(0.1)
+        time.sleep(0.5)
 
-"""
 def inputArray():
     length = (input("What is the array length? "))
     width = (input("What is the array width? "))
@@ -284,26 +346,36 @@ def mapDirection(standard_angle, curr_loc): #curr_loc as a 1x2 array with the co
         curr_loc[1] -= 1 # down
     else:
         curr_loc[0] += 1 # right
-return
+    return
 
 def coordShift(mapFinal, curr_loc):
     return [curr_loc[0], length - curr_loc[1] - 1] # coordinates for matrix
 
 def updateMap(mapFinal, curr_loc): # add conditionals here for other numbers on map
     coordinates = coordShift(mapFinal, curr_loc)
-mapFinal[coordinates[1]][coordinates[0]] = 1
-"""
+    mapFinal[coordinates[1]][coordinates[0]] = 1
+
 ##___MAIN CODE____##
 time.sleep(delay_brickpi)
-
 try:
+    BP.set_motor_dps(Tilt_Motor,0)
     while True:
-        pocNavMaze()
+        navMaze()
+        time.sleep(0.05)
+
+    """while True:
+        navMaze()
         print("Finished 1 iteration")
-        time.sleep(0.01)
-        
-        
-    """goStraight()
+        time.sleep(0.01)"""
+    stop()
+except KeyboardInterrupt:
+    stop()
+    print("Keyboard Interrupt")
+    BP.reset_all()
+
+
+
+"""goStraight()
     all_direction_distance = checkUltrasonic(all_direction_distance)
     #checkAlignment(all_direction_distance)
     if (all_direction_distance[1] < 12):
@@ -341,8 +413,3 @@ try:
         #fprintf(myList)
         #fclose('team07.map.csv')
         time.sleep(delay)"""
-    stop()
-except KeyboardInterrupt:
-    stop()
-    print("Keyboard Interrupt")
-    BP.reset_all()
